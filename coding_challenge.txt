@@ -1,0 +1,252 @@
+create database crime_management_db;
+use crime_management_db;
+
+CREATE TABLE Crime
+ ( CrimeID INT PRIMARY KEY,
+ IncidentType VARCHAR(255),
+ IncidentDate DATE,
+ Location VARCHAR(255),
+ Description TEXT, 
+ Status VARCHAR(20) );
+ 
+CREATE TABLE Victim (
+VictimID INT PRIMARY KEY,
+CrimeID INT,
+Name VARCHAR(255),
+Contactinfo VARCHAR(255), 
+Injuries VARCHAR(255), 
+FOREIGN KEY (CrimeID) REFERENCES Crime (CrimeID) );
+
+CREATE TABLE Suspect (
+SuspectID INT PRIMARY KEY,
+CrimeID INT,
+Name VARCHAR(255),
+Description TEXT,
+CriminalHistory TEXT,
+FOREIGN KEY (CrimeID) REFERENCES Crime (CrimeID));
+
+
+INSERT INTO Crime (CrimeID, IncidentType, IncidentDate, Location, Description, Status)VALUES
+(1, 'Robbery', '2023-09-15', '123 Main St, Cityville', 'Armed robbery at a convenience store', 'Open'), 
+(2, 'Homicide', '2023-09-20', '456 Elm St, Townsville', 'Investigation into a murder case', 'UnderInvestigation'),
+(3, 'Theft', '2023-09-10', '789 Oak St, Villagetown', 'Shoplifting incident at a mall', 'Closed'),
+(4, 'Vandalism', '2024-04-07', 'Broadway', 'Graffiti painted on public property.', 'Closed'),
+(5, 'Fraud', '2024-04-06', 'Highland Avenue', 'Identity theft and fraudulent credit card use.', 'Open');
+ 
+INSERT INTO Victim (VictimID, CrimeID, Name, Contactinfo, Injuries)VALUES
+(1, 1, 'John Doe', 'Johndoe@example.com', 'Minor injuries'),
+(2, 2, 'Jane Smith', 'janesmith@example.com', 'Deceased'),
+(3, 3, 'SpongeBob SquarePants', 'spongebob@example.com', 'None'),
+(4, 5, 'Bugs Bunny', 'bugs@example.com', 'Bruises'),
+(5, 4, 'Mickey Mouse', 'mickey@example.com', 'Cuts');
+
+INSERT INTO Suspect (SuspectID, CrimeID, Name, Description, CriminalHistory)VALUES
+(1, 1, 'Robber 1', 'Armed and masked robber', 'Previous robbery convictions'),
+(2, 2, 'Unknown', 'Investigation ongoing', NULL),
+(3, 3, 'Suspect 1', 'Shoplifting suspect', 'Prior shoplifting arrests'),
+(4, 4, 'Joker', 'Psychopath obsessed with chaos.', 'Multiple murders and acts of violence.'),
+(5, 5, 'Thanos', 'Cosmic warlord seeking universal balance.', 'Responsible for mass genocide.');
+
+-- TASKS
+
+-- 1. Select all open incidents.
+SELECT * 
+FROM crime
+WHERE status = 'open';
+
+/*OUTPUT:
++---------+--------------+--------------+------------------------+------------------------------------------------+--------+
+| CrimeID | IncidentType | IncidentDate | Location               | Description                                    | Status |
++---------+--------------+--------------+------------------------+------------------------------------------------+--------+
+|       1 | Robbery      | 2023-09-15   | 123 Main St, Cityville | Armed robbery at a convenience store           | Open   |
+|       5 | Fraud        | 2024-04-06   | Highland Avenue        | Identity theft and fraudulent credit card use. | Open   |
++---------+--------------+--------------+------------------------+------------------------------------------------+--------+*/
+
+-- 2. Find the total number of incidents.
+SELECT COUNT(*) AS total_incidents
+FROM crime;
+/*output: 5*/
+
+-- 3. List all unique incident types.
+SELECT DISTINCT IncidentType
+FROM Crime;
+/*output:
+IncidentType
+------------
+Robbery
+Homicide
+Theft
+Vandalism
+Fraud
+*/
+
+-- 4. Retrieve incidents that occurred between '2023-09-01' and '2023-09-10'.
+SELECT *
+FROM Crime
+WHERE IncidentDate BETWEEN '2023-09-01' AND '2023-09-10';
+/*output:
+CrimeID | IncidentType | IncidentDate | Location                | Description                    | Status |
++---------+--------------+--------------+-------------------------+--------------------------------+--------+
+|       3 | Theft        | 2023-09-10   | 789 Oak St, Villagetown | Shoplifting incident at a mall | Closed
+*/
+
+-- 5. List persons involved in incidents in descending order of age.
+
+-- 6. Find the average age of persons involved in incidents.
+
+-- 7. List incident types and their counts, only for open cases.
+SELECT IncidentType, COUNT(*) AS IncidentCount
+FROM crime 
+WHERE status = 'Open'
+GROUP BY IncidentType;
+/*output:
+ IncidentType | IncidentCount |
++--------------+---------------+
+| Fraud        |             1 |
+| Robbery      |             1
+*/
+
+--  8. Find suspect and victim with names containing 'Doe'.
+SELECT *
+FROM suspect
+WHERE name LIKE '%Doe%'
+
+UNION ALL
+
+SELECT *
+FROM victim
+WHERE name LIKE '%Doe%';
+/*output:
+ SuspectID | CrimeID | Name     | Description         | CriminalHistory |
++-----------+---------+----------+---------------------+-----------------+
+|         1 |       1 | John Doe | Johndoe@example.com | Minor injuries  |
+*/
+
+-- 9. Retrieve the names of persons involved in open cases and closed cases.
+SELECT distinct v.name,c.status
+FROM victim v 
+JOIN crime c ON c.crimeid = v.crimeid
+WHERE c.status in ('open' ,'closed')
+
+UNION ALL
+
+SELECT distinct s.name,c.status
+FROM suspect s
+JOIN crime c ON c.crimeid = s.crimeid
+WHERE c.status in ('open','closed')
+GROUP BY c.status;
+
+/*OUTPUT:
+name                   status
+John Doe	            Open
+SpongeBob SquarePants	Closed
+Bugs Bunny	            Open
+Mickey Mouse	        Closed
+Suspect 1	           Closed
+Robber 1	           Open
+*/
+
+-- 10. List incident types where there are persons aged 30 or 35 involved. 
+
+-- 11. Find persons involved in incidents of same type as 'Robbery'
+SELECT DISTINCT  v.Name
+FROM victim v
+JOIN crime c ON v.crimeID = c.crimeID
+WHERE c.IncidentType = 'Robbery'
+
+UNION ALL
+
+SELECT DISTINCT s.Name
+FROM suspect s
+JOIN crime c ON s.crimeID = c.crimeID
+WHERE c.IncidentType = 'Robbery';
+/*output:
+  Name     |
++----------+
+| John Doe |
+| Robber 1
+*/
+
+--  12. List incident types with more than one open case.
+SELECT IncidentType
+FROM crime
+WHERE status = 'Open'
+GROUP BY IncidentType
+HAVING COUNT(*) > 1;
+/*output: null*/
+
+-- 13. List all incidents with suspects whose names also appear as victims in other incidents.
+SELECT DISTINCT c.*
+FROM crime c
+JOIN suspect s ON c.crimeID = s.crimeID
+JOIN victim v ON s.name = v.name AND c.crimeID = v.crimeID;
+/*output: null*/
+
+-- 14. Retrieve all incidents along with victim and suspect details.
+SELECT DISTINCT IncidentType, s.*, v.*
+FROM crime c
+JOIN suspect s ON c.crimeID = s.crimeID
+JOIN victim v ON c.crimeID = v.crimeID;
+
+/*output:
++--------------+-----------+---------+-----------+-------------------------------------------+----------------------------------------+----------+---------+-----------------------+-----------------------+----------------+
+| IncidentType | SuspectID | CrimeID | Name      | Description                               | CriminalHistory                        | VictimID | CrimeID | Name                  | Contactinfo           | Injuries       |
++--------------+-----------+---------+-----------+-------------------------------------------+----------------------------------------+----------+---------+-----------------------+-----------------------+----------------+
+| Robbery      |         1 |       1 | Robber 1  | Armed and masked robber                   | Previous robbery convictions           |        1 |       1 | John Doe              | Johndoe@example.com   | Minor injuries |
+| Homicide     |         2 |       2 | Unknown   | Investigation ongoing                     | NULL                                   |        2 |       2 | Jane Smith            | janesmith@example.com | Deceased       |
+| Theft        |         3 |       3 | Suspect 1 | Shoplifting suspect                       | Prior shoplifting arrests              |        3 |       3 | SpongeBob SquarePants | spongebob@example.com | None           |
+| Fraud        |         5 |       5 | Thanos    | Cosmic warlord seeking universal balance. | Responsible for mass genocide.         |        4 |       5 | Bugs Bunny            | bugs@example.com      | Bruises        |
+| Vandalism    |         4 |       4 | Joker     | Psychopath obsessed with chaos.           | Multiple murders and acts of violence. |        5 |       4 | Mickey Mouse          | mickey@example.com    | Cuts           |*/
+
+
+--  15. Find incidents where the suspect is older than any victim.
+
+-- 16. Find suspects involved in multiple incidents:
+SELECT s.name AS SuspectName, COUNT(DISTINCT c.crimeID) AS IncidentCount
+FROM suspect s
+JOIN crime c ON s.crimeID = c.crimeID
+GROUP BY s.name
+HAVING IncidentCount > 1;
+
+/*output: null */
+
+-- 17. List incidents with no suspects involved.
+SELECT  c.incidenttype, s.name
+FROM crime c
+LEFT JOIN suspect s ON c.crimeId = s.crimeId
+WHERE s.crimeId IS NULL;
+/*output: null */
+
+-- 18. List all cases where at least one incident is of type 'Homicide' and all other incidents are of type 'Robbery'.???????????
+SELECT *
+FROM crime 
+WHERE incidenttype= 'homicide' OR incidenttype='robbery';
+                  
+-- 19. Retrieve a list of all incidents and the associated suspects, showing suspects for each incident, or 'No Suspect' if there are none.
+select c.* , s.name AS suspect_name
+from crime c
+LEFT JOIN suspect s ON s.crimeid = c.crimeid;
+/*
++---------+--------------+--------------+-------------------------+------------------------------------------------+--------------------+-----------+
+| CrimeID | IncidentType | IncidentDate | Location                | Description                                    | Status             |suspect_name|
++---------+--------------+--------------+-------------------------+------------------------------------------------+--------------------+-----------+
+|       1 | Robbery      | 2023-09-15   | 123 Main St, Cityville  | Armed robbery at a convenience store           | Open               | Robber 1  |
+|       2 | Homicide     | 2023-09-20   | 456 Elm St, Townsville  | Investigation into a murder case               | UnderInvestigation | Unknown   |
+|       3 | Theft        | 2023-09-10   | 789 Oak St, Villagetown | Shoplifting incident at a mall                 | Closed             | Suspect 1 |
+|       4 | Vandalism    | 2024-04-07   | Broadway                | Graffiti painted on public property.           | Closed             | Joker     |
+|       5 | Fraud        | 2024-04-06   | Highland Avenue         | Identity theft and fraudulent credit card use. | Open               | Thanos    |
++---------+--------------+--------------+-------------------------+------------------------------------------------+--------------------+-----------+
+*/
+
+-- 20. List all suspects who have been involved in incidents with incident types 'Robbery' or 'Assault'
+SELECT s.*
+FROM crime c 
+JOIN suspect s ON s.crimeid = c.crimeid
+WHERE c.IncidentType in ('Robbery','Assault');
+/*
++-----------+---------+----------+-------------------------+------------------------------+
+| SuspectID | CrimeID | Name     | Description             | CriminalHistory              |
++-----------+---------+----------+-------------------------+------------------------------+
+|         1 |       1 | Robber 1 | Armed and masked robber | Previous robbery convictions |
++-----------+---------+----------+-------------------------+------------------------------+
+*/
